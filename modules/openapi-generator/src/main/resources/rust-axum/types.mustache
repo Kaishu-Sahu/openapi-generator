@@ -2,6 +2,8 @@ use std::{mem, str::FromStr};
 
 use base64::{engine::general_purpose, Engine};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use validator::{Validate, ValidationErrors};
+
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[allow(dead_code)]
@@ -39,6 +41,28 @@ where
         Some(inner) => Some(Nullable::Present(inner)),
         None => Some(Nullable::Null),
     })
+}
+
+pub fn validate_optional_nullable<T>(obj: &Option<Nullable<T>>) -> Result<(), ValidationErrors>
+where
+    T: Validate
+{
+    match obj {
+        Some(inner) => match inner {
+            Nullable::Present(inner) => inner.validate(),
+            Nullable::Null => Ok(()),
+        },
+    None => Ok(()),
+    }
+}
+
+pub fn validate_nullable<T>(obj: &Nullable<T>) -> Result<(), ValidationErrors> where
+    T: Validate,
+{
+    match obj {
+        Nullable::Present(inner) => inner.validate(),
+        Nullable::Null => Ok(()),
+    }
 }
 
 /// The Nullable type. Represents a value which may be specified as null on an API.
@@ -661,5 +685,20 @@ impl<'de> Deserialize<'de> for ByteArray {
             Ok(bin) => Ok(ByteArray(bin)),
             _ => Err(serde::de::Error::custom("invalid base64")),
         }
+    }
+}
+
+impl FromStr for ByteArray {
+    type Err = base64::DecodeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let decoded = general_purpose::STANDARD.decode(s)?;
+        Ok(ByteArray(decoded))
+    }
+}
+
+impl ToString for ByteArray {
+    fn to_string(&self) -> String {
+        general_purpose::STANDARD.encode(&self.0)
     }
 }
