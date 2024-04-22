@@ -687,12 +687,6 @@ use crate::{models, types::*};
                                         {{/minItems}}
                                     {{/maxItems}}
                                     {{#isNullable}}
-                                        {{#required}}
-                                                custom(function = "validate_nullable")
-                                        {{/required}}
-                                        {{^required}}
-                                            custom(function = "validate_optional_nullable")
-                                        {{/required}}
                                     {{/isNullable}}
                                         )]
                                 {{/hasValidation}}
